@@ -2,6 +2,7 @@
 from math import *
 from argparse import *
 import configparser
+from collections import namedtuple
 from pdb import set_trace as brk
 
 
@@ -29,7 +30,9 @@ def mm_to_angle(mm, tyre_diameter=TYRE_DIAMETER):
 	return asin(mm / tyre_diameter)
 
 
-CORRECT_TOE = mm_to_angle(-1.6)
+CorrectToe = namedtuple("CorrectToe", "front rear")
+CORRECT_TOE = CorrectToe(mm_to_angle(-1.6),
+		mm_to_angle(3.17))
 
 
 def calculate_toe(width_a, distance_a, width_b, distance_b):
@@ -66,7 +69,7 @@ def calculate_track(toe, width, distance):
 	return width + distance * tan(toe)
 
 
-def target_width(track, distance, toe=CORRECT_TOE):
+def target_width(track, distance, toe=CORRECT_TOE.front):
 	"""How far apart should the dots be for a given toe at a particular
 	distance? We need to know the track (not the actual vehicle track-- but how
 	far apart the dots would be if the front wheels had zero toe) for
@@ -151,17 +154,37 @@ def parse_config(config):
 	return front, rear
 
 
-def display_targets(d, targets):
-	# FIXME: Might start displaying the rear axle targets too as apparently you
-	# can adjust that with shims.
-	forwards, backwards = targets
-	print("Width at {} should be {} (forwards) or {} (backwards)".format(
-			round(d), round(forwards), round(backwards)))
+Targets = namedtuple("Targets", "distance front_forwards front_backwards"
+		" rear_forwards rear_backwards")
+
+
+def calculate_targets(d, error, front_track, rear_track):
+	ret = [d]
+	for axle, track, toe in (("front", front_track, CORRECT_TOE.front),
+			("rear", rear_track, CORRECT_TOE.rear)):
+		for direction, sign in (
+				("forwards", 1),
+				("backwards", -1)):
+			ret.append(target_width(track, d, toe * sign + error))
+	return Targets(*ret)
+
+
+def display_targets(targets):
+	print("Targets:")
+	for t in targets:
+		for axle in ("front", "rear"):
+			for direction in ("forwards", "backwards"):
+				width = getattr(t, "{}_{}".format(axle, direction))
+				print("Width projected from {} wheels, car facing {}, "
+						"at {}: {}".format(axle, direction,
+							round(t.distance),
+							round(width)))
 
 
 def main():
 	ap = ArgumentParser()
 	ap.add_argument("-c", "--config", type=str, default="measurements.ini")
+	ap.add_argument("-i", "--interactive", action="store_true")
 
 	args = ap.parse_args()
 	config = configparser.ConfigParser()
@@ -176,7 +199,7 @@ def main():
 	# is no steering there it's possible it's slightly more reliable.
 	error = errors[1]
 
-	print("Using an error of {:.4f} radians ({:.2f}°)".
+	print("Using an error of {:.4f} radians ({:.2f}°)\n".
 			format(error, rad2deg(error)))
 
 	# OK so now calculate the actual front and rear toe
@@ -186,32 +209,35 @@ def main():
 	rear_toe = rear.calculate_toe(error)
 	display_toe(rear_toe, "Rear ")
 
-	track = calculate_track(front_toe + error, front.forwards_far.width,
+	front_track = calculate_track(front_toe + error, front.forwards_far.width,
 			front.forwards_far.distance)
-	print("Front track (between where the laser was) is {:.2f}mm".format(track))
+	print("Front track (between where the laser was) is"
+			" {:.2f}mm".format(front_track))
 
-	# Now work out targets for correctly setting the front toe. The rear isn't
-	# adjustable.
+	rear_track = calculate_track(rear_toe + error, rear.forwards_far.width,
+			rear.forwards_far.distance)
+	print("Rear track (between where the laser was) is"
+			" {:.2f}mm\n".format(rear_track))
+
+	# Now work out targets for correctly setting the front and rear toes.
 	distances = [front.forwards_near.distance, front.forwards_far.distance]
+	targets = [calculate_targets(d, error, front_track, rear_track)
+			for d in distances]
+	display_targets(targets)
 
-	def targets(d):
-		"""Return the target widths with the car facing forwards and
-		backwards"""
-		return (target_width(track, d, CORRECT_TOE + error),
-				target_width(track, d, -CORRECT_TOE + error))
-
-	for d, targets in [(d, targets(d)) for d in distances]:
-		display_targets(d, targets)
+	if not args.interactive:
+		return
 
 	while True:
-		print("How far is your car away from the wall?")
+		print("\nHow far is your car away from the wall?")
 		inp = input("> ")
 		if not inp or inp[0] == "q": break
 
 		try: distance = float(inp)
 		except ValueError: continue
 
-		display_targets(distance, targets(distance))
+		display_targets([calculate_targets(distance,
+			error, front_track, rear_track)])
 
 	print("OK bye")
 

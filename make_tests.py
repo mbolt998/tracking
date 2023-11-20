@@ -9,9 +9,9 @@ from pdb import set_trace as brk
 
 
 def add_error(config, fname, error_toe):
-	actual_front_toe = CORRECT_TOE
-	actual_rear_toe = mm_to_angle(3.17)
-	track = 1511.3
+	actual_front_toe = CORRECT_TOE.front
+	actual_rear_toe = CORRECT_TOE.rear
+	track = 1511.3, 1483.79
 
 	with open(fname, "w") as fp:
 		for section_name in config.sections():
@@ -23,8 +23,8 @@ def add_error(config, fname, error_toe):
 			if "Forwards" in section_name: s = 1
 			else: s = -1
 
-			front = track - tan(s * actual_front_toe + error_toe) * distance
-			rear = track - tan(s * actual_rear_toe + error_toe) * distance
+			front = track[0] - tan(s * actual_front_toe + error_toe) * distance
+			rear = track[1] - tan(s * actual_rear_toe + error_toe) * distance
 
 			print("front = {}".format(front), file=fp)
 			print("rear = {}\n".format(rear), file=fp)
