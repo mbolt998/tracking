@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from math import *
 from argparse import *
 import configparser
@@ -163,6 +164,8 @@ def main():
 	print("Error of the tool, front and rear estimates: {:.2f}° {:.2f}°"
 			.format(rad2deg(errors[0]), rad2deg(errors[1])))
 
+	# We use the error measured at the rear axle on the basis that since there
+	# is no steering there it's possible it's slightly more reliable.
 	error = errors[1]
 
 	print("Using an error of {:.4f} radians ({:.2f}°)".
@@ -175,7 +178,7 @@ def main():
 	rear_toe = rear.calculate_toe(error)
 	display_toe(rear_toe, "Rear ")
 
-	track = calculate_track(front_toe, front.forwards_far.width,
+	track = calculate_track(front_toe + error, front.forwards_far.width,
 			front.forwards_far.distance)
 	print("Track (between where the laser was) is {:.2f}mm".format(track))
 
@@ -194,7 +197,7 @@ def main():
 	while True:
 		print("How far is your car away from the wall?")
 		inp = input("> ")
-		if inp[0] == "q": break
+		if not inp or inp[0] == "q": break
 
 		try: distance = float(inp)
 		except ValueError: continue
