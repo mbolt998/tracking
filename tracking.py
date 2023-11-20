@@ -42,7 +42,7 @@ def calculate_toe(width_a, distance_a, width_b, distance_b):
 	return atan(opp/adj)
 
 
-def display_toe(angle):
+def display_toe(angle, caption=""):
 	"""Display a toe reading in a nice human-readable way given an angle in
 	radians"""
 	mm = angle_to_mm(angle)
@@ -53,7 +53,8 @@ def display_toe(angle):
 	else:
 		word = "toe-in"
 
-	print("Total {} of {:.2f}° or {:.2f}mm".format(word, abs(deg), abs(mm)))
+	print("{}Total {} of {:.2f}° or {:.2f}mm".format(
+		caption, word, abs(deg), abs(mm)))
 
 
 def calculate_track(toe, width, distance):
@@ -72,6 +73,83 @@ def target_width(track, distance, toe=CORRECT_TOE):
 	return track - distance * tan(toe)
 
 
+class Measurement:
+	def __init__(self):
+		self.distance = None
+		self.width = None
+
+	def __repr__(self):
+		return "{} {}".format(self.distance, self.width)
+
+
+class Calculation:
+	def __init__(self, measurement_a, measurement_b):
+		self.measurement_a = measurement_a
+		self.measurement_b = measurement_b
+		self.toe = self.calculate_toe()
+
+	def calculate_toe(self):
+		return calculate_toe(self.measurement_a.width,
+				self.measurement_a.distance,
+				self.measurement_b.width,
+				self.measurement_b.distance)
+
+
+class MeasurementSet:
+	"""One of these for each axle"""
+	def __init__(self):
+		self.forwards_near = Measurement()
+		self.forwards_far = Measurement()
+		self.backwards_near = Measurement()
+		self.backwards_far = Measurement()
+
+	def estimate_error(self):
+		"""The toes measured forwards and backwards should sum to zero.
+		Whatever they sum to, divided by two, is the error in your measurement
+		device, which we hope is consistent"""
+		forwards = Calculation(self.forwards_near, self.forwards_far)
+		backwards = Calculation(self.backwards_near, self.backwards_far)
+
+		return (forwards.toe + backwards.toe) / 2
+
+	def calculate_toe(self, error):
+		calc = Calculation(self.forwards_near, self.forwards_far)
+		return calc.toe + error
+
+	def __repr__(self):
+		return """
+Forwards Near: {}
+Forwards Far: {}
+Backwards Near: {}
+Backwards Far: {}""".format(self.forwards_near,
+		self.forwards_far,
+		self.backwards_near,
+		self.backwards_far)
+
+
+def parse_config(config):
+	"""Returns two MeasurementSets for the front and rear axles respectively"""
+	front, rear = MeasurementSet(), MeasurementSet()
+
+	for their_name, our_name in (
+			("Forwards Near", "forwards_near"),
+			("Forwards Far", "forwards_far"),
+			("Backwards Near", "backwards_near"),
+			("Backwards Far", "backwards_far")):
+		conf = config[their_name]
+		distance = float(conf["distance"])
+
+		front_measurement = getattr(front, our_name)
+		front_measurement.distance = distance
+		front_measurement.width = float(conf["front"])
+
+		rear_measurement = getattr(rear, our_name)
+		rear_measurement.distance = distance
+		rear_measurement.width = float(conf["rear"])
+
+	return front, rear
+
+
 def main():
 	ap = ArgumentParser()
 	ap.add_argument("-c", "--config", type=str, default="measurements.ini")
@@ -79,21 +157,32 @@ def main():
 	args = ap.parse_args()
 	config = configparser.ConfigParser()
 	config.read(args.config)
-	brk()
 
-	# It doesn't matter what reference point you use for those distances-- a
-	# block of wood in front of the wheel is fine-- but whatever you use you
-	# need to use the same one when computing the target width.
-	width_a, distance_a = 1351,	1035
-	width_b, distance_b = 848, 5230
+	front, rear = parse_config(config)
+	errors = [front.estimate_error(), rear.estimate_error()]
+	print("Error of the tool based on the front and rear axles: {:.2f}° {:.2f}°"
+			.format(rad2deg(errors[0]), rad2deg(errors[1])))
 
-	toe = calculate_toe(width_a, distance_a, width_b, distance_b)
-	display_toe(toe)
+	# We'll use the average error
+	error = sum(errors) / 2
 
-	# This should come out exactly the same whichever width/distance you use
-	track = calculate_track(toe, width_b, distance_b)
+	print("Using an average error of {:.4f} radians ({:.2f}°)".
+			format(error, rad2deg(error)))
 
-	distances = [distance_a, distance_b]
+	# OK so now calculate the actual front and rear toe
+	front_toe = front.calculate_toe(error)
+	display_toe(front_toe, "Front ")
+
+	rear_toe = rear.calculate_toe(error)
+	display_toe(rear_toe, "Rear ")
+
+	track = calculate_track(front_toe, front.forwards_far.width,
+			front.forwards_far.distance)
+	print("Track (between where the laser was) is {:.2f}mm".format(track))
+
+	# Now work out targets for correctly setting the front toe. The rear isn't
+	# adjustable.
+	distances = [front.forwards_near.distance, front.forwards_far.distance]
 	targets = [(d, target_width(track, d)) for d in distances]
 
 	for d, w in targets:
