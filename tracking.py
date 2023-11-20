@@ -1,4 +1,6 @@
 from math import *
+from argparse import *
+import configparser
 from pdb import set_trace as brk
 
 
@@ -71,6 +73,14 @@ def target_width(track, distance, toe=CORRECT_TOE):
 
 
 def main():
+	ap = ArgumentParser()
+	ap.add_argument("-c", "--config", type=str, default="measurements.ini")
+
+	args = ap.parse_args()
+	config = configparser.ConfigParser()
+	config.read(args.config)
+	brk()
+
 	# It doesn't matter what reference point you use for those distances-- a
 	# block of wood in front of the wheel is fine-- but whatever you use you
 	# need to use the same one when computing the target width.
