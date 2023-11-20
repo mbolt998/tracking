@@ -8,8 +8,6 @@ from pdb import set_trace as brk
 
 TYRE_DIAMETER = 473
 # How far the tracking gauge sticks out from the edge of the tyre
-GAUGE_OFFSET = 86
-TYRE_WIDTH = 127
 WHEELBASE = 2040
 
 
