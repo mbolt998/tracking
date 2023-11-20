@@ -114,7 +114,7 @@ class MeasurementSet:
 
 	def calculate_toe(self, error):
 		calc = Calculation(self.forwards_near, self.forwards_far)
-		return calc.toe + error
+		return calc.toe - error
 
 	def __repr__(self):
 		return """
@@ -160,7 +160,7 @@ def main():
 
 	front, rear = parse_config(config)
 	errors = [front.estimate_error(), rear.estimate_error()]
-	print("Error of the tool based on the front and rear axles: {:.2f}° {:.2f}°"
+	print("Error of the tool, front and rear estimates: {:.2f}° {:.2f}°"
 			.format(rad2deg(errors[0]), rad2deg(errors[1])))
 
 	# We'll use the average error
@@ -187,7 +187,7 @@ def main():
 	def target(d):
 		return target_width(track, d, CORRECT_TOE + error)
 
-	targets = [(d, target(track)) for d in distances]
+	targets = [(d, target(d)) for d in distances]
 
 	for d, w in targets:
 		print("Width at {} should be {}".format(d, round(w)))
@@ -200,7 +200,8 @@ def main():
 		try: distance = float(inp)
 		except ValueError: continue
 
-		print("Width at {} should be {}".format(distance, round(target(track))))
+		print("Width at {} should be {}".format(
+			distance, round(target(distance))))
 
 	print("OK bye")
 
