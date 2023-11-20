@@ -152,6 +152,8 @@ def parse_config(config):
 
 
 def display_targets(d, targets):
+	# FIXME: Might start displaying the rear axle targets too as apparently you
+	# can adjust that with shims.
 	forwards, backwards = targets
 	print("Width at {} should be {} (forwards) or {} (backwards)".format(
 			round(d), round(forwards), round(backwards)))
