@@ -71,19 +71,36 @@ def target_width(track, distance, toe=CORRECT_TOE):
 
 
 def main():
+	# It doesn't matter what reference point you use for those distances-- a
+	# block of wood in front of the wheel is fine-- but whatever you use you
+	# need to use the same one when computing the target width.
 	width_a, distance_a = 1351,	1035
 	width_b, distance_b = 848, 5230
+
 	toe = calculate_toe(width_a, distance_a, width_b, distance_b)
 	display_toe(toe)
 
 	# This should come out exactly the same whichever width/distance you use
-	track = calculate_track(toe, width_a, distance_a)
+	track = calculate_track(toe, width_b, distance_b)
 
 	distances = [distance_a, distance_b]
 	targets = [(d, target_width(track, d)) for d in distances]
 
 	for d, w in targets:
 		print("Width at {} should be {}".format(d, round(w)))
+
+	while True:
+		print("How far is your car away from the wall?")
+		inp = input("> ")
+		if inp[0] == "q": break
+
+		try: distance = float(inp)
+		except ValueError: continue
+
+		print("Width at {} should be {}".format(distance,
+			round(target_width(track, distance))))
+
+	print("OK bye")
 
 
 if __name__ == "__main__":
