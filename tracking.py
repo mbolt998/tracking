@@ -26,6 +26,9 @@ def mm_to_angle(mm, tyre_diameter=TYRE_DIAMETER):
 	return asin(mm / tyre_diameter)
 
 
+CORRECT_TOE = mm_to_angle(-1.6)
+
+
 def calculate_toe(width_a, distance_a, width_b, distance_b):
 	"""width_a is the width between the laser dots at distance_a, and width_b
 	is the distance between them at distance_b. distance_a should be the
@@ -59,18 +62,28 @@ def calculate_track(toe, width, distance):
 	return width + distance * tan(toe)
 
 
+def target_width(track, distance, toe=CORRECT_TOE):
+	"""How far apart should the dots be for a given toe at a particular
+	distance? We need to know the track (not the actual vehicle track-- but how
+	far apart the dots would be if the front wheels had zero toe) for
+	this"""
+	return track - distance * tan(toe)
+
+
 def main():
 	width_a, distance_a = 1351,	1035
 	width_b, distance_b = 848, 5230
 	toe = calculate_toe(width_a, distance_a, width_b, distance_b)
 	display_toe(toe)
 
-	print(calculate_track(toe, width_a, distance_a))
-	print(calculate_track(toe, width_b, distance_b))
+	# This should come out exactly the same whichever width/distance you use
+	track = calculate_track(toe, width_a, distance_a)
 
-	# Given the track and the desired angle it should be fairly easy to work
-	# out the measurements you should be shooting for at those two distances.
-	# TODO YOU ARE HERE.
+	distances = [distance_a, distance_b]
+	targets = [(d, target_width(track, d)) for d in distances]
+
+	for d, w in targets:
+		print("Width at {} should be {}".format(d, round(w)))
 
 
 if __name__ == "__main__":
