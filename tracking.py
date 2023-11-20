@@ -184,8 +184,10 @@ def main():
 	# adjustable.
 	distances = [front.forwards_near.distance, front.forwards_far.distance]
 
-	# FIXME you should be adding or subtracting the error from the targets.
-	targets = [(d, target_width(track, d)) for d in distances]
+	def target(d):
+		return target_width(track, d, CORRECT_TOE + error)
+
+	targets = [(d, target(track)) for d in distances]
 
 	for d, w in targets:
 		print("Width at {} should be {}".format(d, round(w)))
@@ -198,8 +200,7 @@ def main():
 		try: distance = float(inp)
 		except ValueError: continue
 
-		print("Width at {} should be {}".format(distance,
-			round(target_width(track, distance))))
+		print("Width at {} should be {}".format(distance, round(target(track))))
 
 	print("OK bye")
 
