@@ -151,6 +151,12 @@ def parse_config(config):
 	return front, rear
 
 
+def display_targets(d, targets):
+	forwards, backwards = targets
+	print("Width at {} should be {} (forwards) or {} (backwards)".format(
+			round(d), round(forwards), round(backwards)))
+
+
 def main():
 	ap = ArgumentParser()
 	ap.add_argument("-c", "--config", type=str, default="measurements.ini")
@@ -180,19 +186,20 @@ def main():
 
 	track = calculate_track(front_toe + error, front.forwards_far.width,
 			front.forwards_far.distance)
-	print("Track (between where the laser was) is {:.2f}mm".format(track))
+	print("Front track (between where the laser was) is {:.2f}mm".format(track))
 
 	# Now work out targets for correctly setting the front toe. The rear isn't
 	# adjustable.
 	distances = [front.forwards_near.distance, front.forwards_far.distance]
 
-	def target(d):
-		return target_width(track, d, CORRECT_TOE + error)
+	def targets(d):
+		"""Return the target widths with the car facing forwards and
+		backwards"""
+		return (target_width(track, d, CORRECT_TOE + error),
+				target_width(track, d, -CORRECT_TOE + error))
 
-	targets = [(d, target(d)) for d in distances]
-
-	for d, w in targets:
-		print("Width at {} should be {}".format(d, round(w)))
+	for d, targets in [(d, targets(d)) for d in distances]:
+		display_targets(d, targets)
 
 	while True:
 		print("How far is your car away from the wall?")
@@ -202,8 +209,7 @@ def main():
 		try: distance = float(inp)
 		except ValueError: continue
 
-		print("Width at {} should be {}".format(
-			distance, round(target(distance))))
+		display_targets(distance, targets(distance))
 
 	print("OK bye")
 
