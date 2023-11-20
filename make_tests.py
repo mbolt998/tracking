@@ -8,7 +8,7 @@ from pdb import set_trace as brk
 
 def add_error(config, fname, error_toe):
 	actual_front_toe = CORRECT_TOE
-	actual_rear_toe = mm_to_angle(-3.0)
+	actual_rear_toe = mm_to_angle(-3.17)
 	track = 1478.41
 
 	with open(fname, "w") as fp:
@@ -35,7 +35,7 @@ def main():
 	config.read("measurements.ini")
 
 	# Simulate measurements with a tool that systematically toes in
-	add_error(config, "toed_in.ini", deg2rad(0.5))
+	add_error(config, "toed_in.ini", deg2rad(-0.5))
 
 	# Simulate measurements with a tool that systematically toes out
 	add_error(config, "toed_out.ini", deg2rad(-0.5))

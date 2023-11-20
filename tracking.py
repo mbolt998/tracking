@@ -4,7 +4,7 @@ import configparser
 from pdb import set_trace as brk
 
 
-TYRE_DIAMETER = 492
+TYRE_DIAMETER = 473
 # How far the tracking gauge sticks out from the edge of the tyre
 GAUGE_OFFSET = 86
 TYRE_WIDTH = 127
@@ -163,10 +163,9 @@ def main():
 	print("Error of the tool, front and rear estimates: {:.2f}° {:.2f}°"
 			.format(rad2deg(errors[0]), rad2deg(errors[1])))
 
-	# We'll use the average error
-	error = sum(errors) / 2
+	error = errors[1]
 
-	print("Using an average error of {:.4f} radians ({:.2f}°)".
+	print("Using an error of {:.4f} radians ({:.2f}°)".
 			format(error, rad2deg(error)))
 
 	# OK so now calculate the actual front and rear toe
