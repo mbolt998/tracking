@@ -183,6 +183,8 @@ def main():
 	# Now work out targets for correctly setting the front toe. The rear isn't
 	# adjustable.
 	distances = [front.forwards_near.distance, front.forwards_far.distance]
+
+	# FIXME you should be adding or subtracting the error from the targets.
 	targets = [(d, target_width(track, d)) for d in distances]
 
 	for d, w in targets:
