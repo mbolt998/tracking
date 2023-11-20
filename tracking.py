@@ -10,6 +10,7 @@ TYRE_DIAMETER = 473
 # How far the tracking gauge sticks out from the edge of the tyre
 GAUGE_OFFSET = 86
 TYRE_WIDTH = 127
+WHEELBASE = 2040
 
 
 def rad2deg(theta):
@@ -79,6 +80,8 @@ def target_width(track, distance, toe=CORRECT_TOE.front):
 
 class Measurement:
 	def __init__(self):
+		"""Note these are proper distances, with wheelbases added where
+		necessary, not the "raw" distances recorded in the config file"""
 		self.distance = None
 		self.width = None
 
@@ -150,6 +153,11 @@ def parse_config(config):
 		rear_measurement = getattr(rear, our_name)
 		rear_measurement.distance = distance
 		rear_measurement.width = float(conf["rear"])
+
+		if "Forwards" in their_name:
+			rear_measurement.distance += WHEELBASE
+		else:
+			front_measurement.distance += WHEELBASE
 
 	return front, rear
 

@@ -3,7 +3,7 @@
 # particular error in your tool and given toes to check if tracking.py can
 # figure the toes back out again from the data.
 import configparser
-from tracking import deg2rad, mm_to_angle, CORRECT_TOE
+from tracking import deg2rad, mm_to_angle, CORRECT_TOE, WHEELBASE
 from math import *
 from pdb import set_trace as brk
 
@@ -20,11 +20,19 @@ def add_error(config, fname, error_toe):
 			print("distance = {}".format(section["distance"]), file=fp)
 			distance = float(section["distance"])
 
-			if "Forwards" in section_name: s = 1
-			else: s = -1
+			if "Forwards" in section_name:
+				s = 1
+				front_distance = distance
+				rear_distance = distance + WHEELBASE
+			else:
+				front_distance = distance + WHEELBASE
+				rear_distance = distance
+				s = -1
 
-			front = track[0] - tan(s * actual_front_toe + error_toe) * distance
-			rear = track[1] - tan(s * actual_rear_toe + error_toe) * distance
+			front = track[0] - (tan(s * actual_front_toe + error_toe) *
+					front_distance)
+			rear = track[1] - (tan(s * actual_rear_toe + error_toe) *
+					rear_distance)
 
 			print("front = {}".format(front), file=fp)
 			print("rear = {}\n".format(rear), file=fp)
